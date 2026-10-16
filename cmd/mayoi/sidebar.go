@@ -461,6 +461,13 @@ func (a *app) fileTree(c *ui.Context) {
 	if action != nil {
 		action()
 	}
+	// The outline also selects a file when its row's padding is clicked,
+	// or assistive technology chooses it, without clicking the content.
+	if out.Changed() && clicked == "" && a.fileRow >= 0 && a.fileRow < a.files.Rows() {
+		if path := a.files.Item(a.fileRow); !t.IsDir(path) {
+			clicked = path
+		}
+	}
 	if out.Submitted() && a.fileRow >= 0 && a.fileRow < a.files.Rows() {
 		// Enter: keep the file open with the focus.
 		if path := a.files.Item(a.fileRow); !t.IsDir(path) {

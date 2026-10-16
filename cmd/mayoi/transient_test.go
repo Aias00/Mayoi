@@ -160,6 +160,36 @@ func TestExplorerPreviewTab(t *testing.T) {
 	}
 }
 
+// The whole Explorer row previews its file, including the space beside its name.
+func TestExplorerWholeRowPreviewsFile(t *testing.T) {
+	for _, side := range []string{"leading", "trailing"} {
+		t.Run(side, func(t *testing.T) {
+			hs := newHarness(t, true)
+			a, tt := hs.a, hs.tt
+			a.openFile(hs.path("README.md"), true)
+			a.openFile(hs.path("main.go"), true)
+			hs.settle()
+			for _, name := range []string{"README.md", "main.go"} {
+				// Find the Explorer label before the tab with the same name.
+				r, ok := tt.Find(name)
+				if !ok {
+					t.Fatalf("no row %s", name)
+				}
+				x := r.X - 24
+				if side == "trailing" {
+					x = a.window.SidebarWidth - 12
+				}
+				tt.ClickAt(x, r.Y+r.H/2)
+				hs.settle()
+				if d := a.activeEditor(); d == nil || d.path != hs.path(name) {
+					t.Fatalf("clicking %s space of %s did not switch editors", side, name)
+				}
+				wantTabs(t, hs, "README.md", "main.go")
+			}
+		})
+	}
+}
+
 // A double click in the Explorer keeps the file open, with the keyboard.
 func TestExplorerDoubleClick(t *testing.T) {
 	hs := newHarness(t, true)
