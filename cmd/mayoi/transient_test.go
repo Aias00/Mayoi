@@ -190,6 +190,28 @@ func TestExplorerWholeRowPreviewsFile(t *testing.T) {
 	}
 }
 
+// Walking the Explorer with the arrows shows each file in one preview
+// tab, the keyboard staying in the Explorer; a folder leaves it shown.
+func TestExplorerArrowsPreviewFiles(t *testing.T) {
+	hs := newHarness(t, true)
+	tt := hs.tt
+	tt.Click("README.md")
+	hs.settle()
+	wantTabs(t, hs, "README.md*")
+	tt.Key(0, ui.KeyUp)
+	hs.settle()
+	wantTabs(t, hs, "main.go*")
+	tt.Key(0, ui.KeyUp)
+	hs.settle()
+	wantTabs(t, hs, "go.mod*")
+	tt.Key(0, ui.KeyUp)
+	hs.settle()
+	wantTabs(t, hs, "go.mod*")
+	if got := hs.a.explorerChoice(); got != hs.path("web") {
+		t.Fatalf("chose %s; want the folder web", got)
+	}
+}
+
 // A double click in the Explorer keeps the file open, with the keyboard.
 func TestExplorerDoubleClick(t *testing.T) {
 	hs := newHarness(t, true)

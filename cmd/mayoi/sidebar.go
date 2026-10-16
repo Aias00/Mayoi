@@ -461,8 +461,8 @@ func (a *app) fileTree(c *ui.Context) {
 	if action != nil {
 		action()
 	}
-	// The outline also selects a file when its row's padding is clicked,
-	// or assistive technology chooses it, without clicking the content.
+	// A file chosen otherwise than by a click on its name, as by a click
+	// beside it, the arrows or typing its first letters, shows as well.
 	if out.Changed() && clicked == "" && a.fileRow >= 0 && a.fileRow < a.files.Rows() {
 		if path := a.files.Item(a.fileRow); !t.IsDir(path) {
 			clicked = path
