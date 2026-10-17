@@ -77,8 +77,8 @@ func TestCutCurrentLine(t *testing.T) {
 		}{
 			{"first", "one\ntwo\nthree", "two\nthree", "one\n", 1},
 			{"middle", "one\ntwo\nthree", "one\nthree", "two\n", 5},
-			{"last", "one\ntwo", "one", "two", 5},
-			{"single", "one", "", "one", 1},
+			{"last", "one\ntwo", "one", "two\n", 5},
+			{"single", "one", "", "one\n", 1},
 			{"blank", "one\n\ntwo", "one\ntwo", "\n", 4},
 			{"trailing blank", "one\n", "one", "\n", 4},
 			{"unicode", "一行\n迷い 😀\n末行", "一行\n末行", "迷い 😀\n", 5},

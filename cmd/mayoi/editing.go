@@ -405,7 +405,8 @@ func deleteLines(d *editor) {
 	d.sel = [2]int{c, c}
 }
 
-// cut cuts the selection, or the caret's line when there is none.
+// cut cuts the selection, or the caret's line when there is none, as in
+// VS Code.
 func (a *app) cut(d *editor) {
 	if d.locked() || a.settings.Vim && d.vim.mode != vimInsert {
 		return
@@ -419,15 +420,10 @@ func (a *app) cut(d *editor) {
 		d.edit([2]int{start, start}, textEdit{start, end, ""})
 		return
 	}
+	// The line with its newline, the last one too, so that it pastes back
+	// as a line at the start of another.
 	start, end := snap.LineRange(snap.LineAt(min(d.sel[1], snap.Len())))
-	if end < snap.Len() {
-		end++
-	}
-	text := snap.Slice(start, end)
-	if text == "" {
-		text = "\n" // the empty last line removes the newline before it
-	}
-	a.services.WriteClipboard(text)
+	a.services.WriteClipboard(snap.Slice(start, end) + "\n")
 	deleteLines(d)
 }
 
