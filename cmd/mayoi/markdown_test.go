@@ -193,6 +193,61 @@ func TestMarkdownPreview(t *testing.T) {
 	hs.until("long extension", func() bool { return a.activeEditor().preview.loaded })
 }
 
+func TestMarkdownPreviewUsesPaneWidth(t *testing.T) {
+	hs := newHarness(t, true)
+	a := hs.a
+	writePNG(t, hs.path("wide.png"), 2000, 100)
+	source := "[Paragraph](https://example.com/paragraph)\n\n| Left | Right |\n| --- | --- |\n| [First](https://example.com/first) | [Second](https://example.com/second) |\n\n[![Wide image](wide.png)](https://example.com/image)\n"
+	if err := os.WriteFile(hs.path("README.md"), []byte(source), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	a.openFile(hs.path("README.md"), true)
+	a.run("view.togglePreview")
+	hs.until("preview", func() bool { return a.activeEditor().preview.loaded })
+	for _, layout := range []struct {
+		name  string
+		width int
+		split bool
+	}{
+		{"wide", 1600, false},
+		{"narrow", 900, false},
+		{"split", 1600, true},
+	} {
+		t.Run(layout.name, func(t *testing.T) {
+			hs.tt.SetSize(layout.width, 760)
+			if layout.split {
+				a.run("view.splitRight")
+				if a.activeEditor().preview == nil {
+					a.run("view.togglePreview")
+				}
+				hs.until("split preview", func() bool { return a.activeEditor().preview.loaded })
+			}
+			hs.settle()
+			bounds := func(label string) ui.Rect {
+				r, ok := hs.tt.Find(label)
+				if !ok {
+					t.Fatalf("missing %s", label)
+				}
+				return r
+			}
+			pane := bounds("Preview README.md")
+			paragraph := bounds("Open link https://example.com/paragraph")
+			if left := paragraph.X - pane.X; left < 0 || left > 40 {
+				t.Errorf("paragraph has excessive left margin: %v in pane %v", left, pane)
+			}
+			first := bounds("Open link https://example.com/first")
+			second := bounds("Open link https://example.com/second")
+			if gap := second.X - first.X; gap < (pane.W-80)/2 {
+				t.Errorf("table columns are squeezed: gap %v in pane %v", gap, pane)
+			}
+			image := bounds("Open link https://example.com/image")
+			if image.W < pane.W-80 || image.X+image.W > pane.X+pane.W {
+				t.Errorf("image does not fit available width: %v in pane %v", image, pane)
+			}
+		})
+	}
+}
+
 func TestMarkdownLiveSplitAndScroll(t *testing.T) {
 	hs := newHarness(t, true)
 	a := hs.a
