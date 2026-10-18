@@ -34,6 +34,8 @@ type markdownPreview struct {
 	blocks     []markdownBlock
 	cache      markdownCache
 	root       string
+	measure    float32
+	measured   ui.Font
 	list       ui.ListState
 	scroll     ui.ScrollState
 	observed   uint64
@@ -684,7 +686,18 @@ func (a *app) markdownView(c *ui.Context, v *viewer, name string) {
 	a.followMarkdown(v)
 	m, p := v.markdown, a.pal
 	size := a.settings.FontSize
-	width := max(1, v.pane.Bounds(c).W-2*textPadR)
+	// Measure the actual body font, including the Matrix UI font. The
+	// column is 120 digits wide, room for tables and images while a line
+	// of prose stays short enough to read.
+	font := ui.Font{Family: c.Theme().Font, Size: size}
+	if p.mono {
+		font.Weight, font.Features = a.settings.FontWeight, strings.Join(a.settings.FontFeatures, ",")
+	}
+	if m.measured != font || m.measure == 0 {
+		m.measured = font
+		m.measure, _ = ui.ShapeText(strings.Repeat("0", 120), font, 0).Size()
+	}
+	width := min(m.measure, max(1, v.pane.Bounds(c).W-2*textPadR))
 	ui.List(c.Key("markdown"), &m.list, len(m.blocks)).Bind(&v.pane).TrackScroll(&m.scroll).Fill().Background(p.editor).Label(locales.PreviewLabel(name)).Padding(editorPadY, textPadR).Rows(func(row ui.ListRow) {
 		c := row.Context
 		b := m.blocks[row.Index]
@@ -696,8 +709,8 @@ func (a *app) markdownView(c *ui.Context, v *viewer, name string) {
 		if b.quote > 0 && (row.Index+1 == len(m.blocks) || m.blocks[row.Index+1].quote < b.quote) {
 			outside, bottom = max(bottom, size*a.settings.LineHeight*0.75), 0
 		}
-		ui.Row(c).WidthPercent(100).Margin(0, 0, outside, 0).Children(func() {
-			ui.Row(c).WidthPercent(100).AlignItems(ui.Start).Padding(0, 0, 0, b.offset*size).Gap(size * 0.5).Children(func() {
+		ui.Row(c).WidthPercent(100).Justify(ui.Center).Margin(0, 0, outside, 0).Children(func() {
+			ui.Row(c).WidthPercent(100).MaxWidth(m.measure).AlignItems(ui.Start).Padding(0, 0, 0, b.offset*size).Gap(size * 0.5).Children(func() {
 				for range b.quote {
 					ui.Box(c).Width(3).AlignSelf(ui.Stretch).Background(p.guideNow)
 				}
